@@ -1,3 +1,9 @@
+# Created by:               https://github.com/devlightman
+# Implemented Models:       Neural Net, Machine Learning
+# Libraries Used:           Numpy, Matplotlib, Pandas, Tensorflow, SKLearn
+# IDE Used:                 PyCharm Professional
+# Tested On:                PyCharm, Google Collab, Visual Studio Code, Jupyter Notebook, Anaconda Spyder
+
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
