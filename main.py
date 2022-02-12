@@ -4,97 +4,145 @@
 # IDE Used:                 PyCharm Professional
 # Tested On:                PyCharm, Google Collab, Visual Studio Code, Jupyter Notebook, Anaconda Spyder
 
+import math
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 import pandas_datareader as web
-import datetime as dt
-
 from sklearn.preprocessing import MinMaxScaler
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, LSTM
+from keras.models import Sequential
+from keras.layers import Dense, LSTM
+import matplotlib.pyplot as plt
+plt.style.use('fivethirtyeight')
 
-# Load Data
-company = 'FB'
+# Getting the stock quote
+df = web.DataReader('AMZN', data_source='yahoo', start='2017-01-01', end ='2021-11-30')
 
-start = dt.datetime(2019,1,1)
-end = dt.datetime(2021,1,1)
+# Showing the data
+df
 
-data = web.DataReader(company, 'yahoo', start, end)
+# Visualizing the closing price
+plt.figure(figsize=(16,8))
+plt.title('Closing Price History')
+plt.plot(df['Close'])
+plt.xlabel('Year', fontsize=18)
+plt.ylabel('Closing Price (USD$)', fontsize=18)
+plt.show()
 
-# Prepare Data for neural net
-scaler = MinMaxScaler(feature_range=(0, 1))
-scaled_data = scaler.fit_transform(data['Close'].values.reshape(-1, 1))
+# Creating a new dataframe with only the 'Close column'
+data = df.filter(['Close'])
+# Converting the dataframe to a numpy array
+dataset = data.values
 
-prediction_days = 30
+# Getting the number of rows to train the model on
+training_data_len = math.ceil( len(dataset) * .8 )
 
+training_data_len
+
+# Scaling the data
+scaler = MinMaxScaler(feature_range=(0,1))
+scaled_data = scaler.fit_transform(dataset)
+
+scaled_data
+
+# Creating the training dataset
+# Creating the scaled training dataset
+train_data = scaled_data[0:training_data_len , :]
+
+# Splitting the data into x_train and y_train data sets
 x_train = []
 y_train = []
 
-for x in range(prediction_days, len(scaled_data)):
-    x_train.append(scaled_data[x-prediction_days:x, 0])
-    y_train.append(scaled_data[x, 0])
+for i in range(60, len(train_data)):
+    x_train.append(train_data[i-60:i, 0])
+    y_train.append(train_data[i, 0])
+    if i <= 60:
+        print(x_train)
+        print(y_train)
+        print()
 
+# Converting x_train and y_train to numpy arrays
 x_train, y_train = np.array(x_train), np.array(y_train)
+
+# Reshaping the data
 x_train = np.reshape(x_train, (x_train.shape[0], x_train.shape[1], 1))
+x_train.shape
 
-# Build the NN Model
+# Building the LSTM Model
 model = Sequential()
+model.add(LSTM(50, return_sequences = True, input_shape = (x_train.shape[1], 1)))
+model.add(LSTM(50, return_sequences = False))
+model.add(Dense(25))
+model.add(Dense(1))
 
-model.add(LSTM(units=50, return_sequences=True, input_shape=(x_train.shape[1], 1)))
-model.add(Dropout(0.2))
-model.add(LSTM(units=50, return_sequences=True))
-model.add(Dropout(0.2))
-model.add(LSTM(units=50))
-model.add(Dropout(0.2))
-model.add(Dense(units=1))  # Prediction of the next closing value
-
+# Compiling the model
 model.compile(optimizer='adam', loss='mean_squared_error')
-model.fit(x_train, y_train, epochs=25, batch_size=32)
 
-''' Test the Model Accuracy on Existing Data'''
+# Training the model
+model.fit(x_train, y_train, batch_size = 32, epochs = 25)
 
-# Load Test Data
-test_start = dt.datetime(2021,1,1)
-test_end = dt.datetime.now()
-
-test_data = web.DataReader(company, 'yahoo', test_start, test_end)
-actual_prices = test_data['Close'].values
-
-total_dataset = pd.concat((data['Close'], test_data['Close']), axis=0)
-
-model_inputs = total_dataset[len(total_dataset) - len(test_data) - prediction_days:].values
-model_inputs = model_inputs.reshape(-1, 1)
-model_inputs = scaler.transform(model_inputs)
-
-# Make Predictions on Test Data
-
+# Creating the testing dataset
+# Creating a new array containing scaled values
+test_data = scaled_data[training_data_len -60: , :]
+# Creating the data sets x_test and y_test
 x_test = []
+y_test = dataset[training_data_len:, :]
+for i in range(60, len(test_data)):
+    x_test.append(test_data[i-60:i, 0])
 
-for x in range(prediction_days, len(model_inputs)):
-    x_test.append(model_inputs[x-prediction_days:x, 0])
-
+# Converting the data to a numpy array
 x_test = np.array(x_test)
+
+# Reshaping the data
 x_test = np.reshape(x_test, (x_test.shape[0], x_test.shape[1], 1))
 
-predicted_prices = model.predict(x_test)
-predicted_prices = scaler.inverse_transform(predicted_prices)
+# Getting the models predicted price values
+predictions = model.predict(x_test)
+predictions = scaler.inverse_transform(predictions)
 
-# Plot The Test Predictions
-plt.plot(actual_prices, color="black", label=f"Actual {company} Price")
-plt.plot(predicted_prices, color="green", label=f"Predicted {company} Price")
-plt.title(f"{company} Share Price")
-plt.xlabel('Time')
-plt.ylabel(f'{company} Share Price')
-plt.legend()
+# Getting the root mean squared error (RMSE)
+rmse = np.sqrt( np.mean((( predictions - y_test )**2 )))
+rmse
+
+# Plotting the data
+train = data[:training_data_len]
+valid = data[training_data_len:]
+valid['Predictions'] = predictions
+
+# Visualizing the data
+plt.figure(figsize=(16,8))
+plt.title('Prediction Model')
+plt.xlabel('Year', fontsize=18)
+plt.ylabel('Closing Price (USD$)', fontsize=18)
+plt.plot(train['Close'])
+plt.plot(valid[['Close', 'Predictions']])
+plt.legend(['Train', 'Val', 'Predictions'], loc= 'lower right')
 plt.show()
 
-# Predict Next Day
+# Showing the valid and predicted prices
+valid
 
-real_data = [model_inputs[len(model_inputs) + 1 - prediction_days:len(model_inputs+1), 0]]
-real_data = np.array(real_data)
-real_data = np.reshape(real_data, (real_data.shape[0], real_data.shape[1], 1))
+# Getting the quote
+AMZN_quote = web.DataReader('AMZN', data_source='yahoo', start='2019-01-01', end='2021-12-27')
+# Creating a new dataframe
+new_df = AMZN_quote.filter(['Close'])
+# Getting the last 60 days closing price values and convert the dataframe to an array
+last_60_days = new_df[-60:].values
+# Scaling the data to be values between 0 and 1
+last_60_days_scaled = scaler.transform(last_60_days)
+# Creating an empty list
+X_test = []
+# Appending the past 60 days
+X_test.append(last_60_days_scaled)
+# Converting the X_test data set too a numpy array
+X_test = np.array(X_test)
+# Reshaping the data
+X_test = np.reshape(X_test, (X_test.shape[0], X_test.shape[1], 1))
+# Predicted scaled price
+pred_price = model.predict(X_test)
+# Undoing the scaling
+pred_price = scaler.inverse_transform(pred_price)
+print(pred_price)
 
-prediction = model.predict(real_data)
-prediction = scaler.inverse_transform(prediction)
-print(f"Prediction: {prediction}")
+# Getting the quote
+AMZN_quote2 = web.DataReader('AMZN', data_source='yahoo', start='2021-12-27', end='2021-12-27')
+print(AMZN_quote2['Close'])
