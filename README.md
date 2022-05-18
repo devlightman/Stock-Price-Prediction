@@ -6,7 +6,10 @@ This program uses an artificial recurrent neural network, more specifically, the
 For the libraries, math, numpy, pandas, pandas_datareader, MinMaxScaler from sklearn, Sequential from keras.models , Dense and LSTM from keras.layers were imported. The program imported matplotlib.pyplot as plt and use ‘fivethirtyeight’ as the plt style. The program uses yahoo finance to import the stock information and the start and end date, as well as the company ticker can be modified to the user’s discretion.  To make sure the program is functioning properly, the ticker ‘FB’ was used to import historical data for Meta Platforms, Inc. stock from January 1st, 2017, till November 30th, 2021, and run. Figure 1 is attached below.
 
 <img width="368" alt="image" src="https://user-images.githubusercontent.com/20808296/168998127-1202f976-7846-4743-aeb3-fe179ed19d22.png">
-Figure 1: Historical data for Meta Platforms, Inc. stock from January 1st, 2017, till November 30th, 2021
+Figure 1: Historical data for Meta Platforms, Inc. stock from January 1st, 2017, till November 30th, 2021.
+
+
+
 
 The program had successfully managed to import all the recorded data available for the selected timeline for Meta Platforms, Inc. The program can also visualize the closing price history for the selected ticker to give the data a visual representation.
 
@@ -63,3 +66,5 @@ Figure 10: The predicted and the actual price of AMZN on 2021-12-27. If we look 
 Figure 11: The predicted and the actual price of AMZN on 2021-12-27. If we look on top, [[176.20567]] is the predicted price from the model whereas 3393.389893 was the actual price on that day.
 
 Because the program analyzed the stock data of Meta Platforms, Inc. and tried to predict the closing stock price of other companies, the results came out closer to the actual price and predictions for NVIDIA Corporation (NVDA) and Apple Inc. (AAPL) but was far off for the case of Amazon.com Inc.
+
+Updated: December 30th, 2021
